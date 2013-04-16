@@ -1,0 +1,41 @@
+---
+name: bosh_micro01
+
+network:
+  ip: 192.168.1.10
+  netmask: 255.255.255.0
+  gateway: 192.168.1.1
+  dns:
+  - 192.168.1.1
+  cloud_properties:
+    name: "VM Network"
+
+resources:
+  persistent_disk: 16384
+  cloud_properties:
+    ram: 1024
+    disk: 16384
+    cpu: 1
+
+cloud:
+  plugin: vsphere
+  properties:
+    agent:
+      ntp:
+       - us.pool.ntp.org
+    vcenters:
+      - host: 192.168.1.6
+        user: root
+        password: vmware
+        datacenters:
+          - name: vDataCenter
+            vm_folder: MicroBOSH_VMs
+            template_folder: MicroBOSH_Templates
+            disk_path: MicroBOSH_Disks
+            datastore_pattern: datastore1
+            persistent_datastore_pattern: datastore1
+            allow_mixed_datastores: false
+            clusters:
+            - vCluster
+                
+
