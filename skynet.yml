@@ -220,6 +220,12 @@ jobs:
     saml_login_server:
       entityid: "samllogin.skynet.hgadgil.net"
       idp_entity_alias: sso-sp
+      keystore_name: samlKeystore.jks
+      keystore_key: selfsigned
+      keystore_password: password
+      idp_metadata_file: idp_metadata.xml
+      nameid_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
+
 
 properties:
 
