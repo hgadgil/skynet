@@ -488,6 +488,9 @@ properties:
     address: 192.168.1.30
     port: 54321
 
+  login:
+    url: http://samllogin.skynet.hgadgil.net
+
   uaa:
     no_ssl: true
     catalina_opts: -Xmx768m -XX:MaxPermSize=256m
