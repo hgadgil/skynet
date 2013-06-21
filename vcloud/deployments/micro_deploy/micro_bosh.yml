@@ -1,0 +1,43 @@
+---
+name: bosh_micro01
+
+logging:
+  level: DEBUG
+
+network:
+  ip: 10.0.0.100
+  netmask: 255.255.255.0
+  gateway: 10.0.0.1
+  dns:
+  - 10.0.0.1
+  cloud_properties:
+    name: "tempest-org-vdc-nw"
+
+resources:
+  persistent_disk: 16384
+
+cloud:
+  plugin: vcloud
+  properties:
+    agent:
+      ntp:
+       - pool.ntp.org
+    vcds:
+      - url: https://10.0.0.6
+        user: admin
+        password: password
+        entities:
+          organization: tempest
+          virtual_datacenter: tempest-org-vdc
+          vapp_catalog: cloudfoundry
+          media_catalog: cloudfoundry 
+          media_storage_profile: *
+          vm_metadata_key: cf-agent-env
+          description: MicroBosh on vCloudDirector 
+
+apply_spec:
+  properties: {}
+  agent:
+    blobstore: {}
+    nats: {}
+

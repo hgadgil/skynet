@@ -1,0 +1,536 @@
+---
+
+# Registering service tokens ('bosh diff' again if this generated documentation is incomplete):
+# $ gem install admin-cf-plugin
+# $ cf create-service-auth-token --provider core --token d8d7b640fea0666c28eaa93eccdc275e649b6d27 --label mysql
+# $ cf create-service-auth-token --provider core --token 401e721c8cba8c51d8bd4ca1b4e6597e7a527b40 --label redis
+# $ cf create-service-auth-token --provider core --token 2a8fb923bc4c22750856914eea810607a221fead --label mongodb
+# $ cf create-service-auth-token --provider core --token A00430A8BAED490B1240338DA34B10D --label rabbitmq
+# $ cf create-service-auth-token --provider core --token cqZeAh4BXFBXwLrrWJCpQTfeDnaCn7m --label postgresql
+
+name: skynet
+director_uuid: c5b4472a-1db0-41d1-9579-9b741ea8e10d 
+
+# Create release from the following commits:
+# releases repo: vmw-tmpst/releases; commit: 9162f9b (yeti submodule)
+# component: tempest/alpha2/bosh; repo: cloudfoundry/bosh; commit: 67ddc1a (aws_registry should use aws region instead of endpoint)
+# component: tempest/alpha2/bosh-release; repo: cloudfoundry/bosh-release; commit: 72a7c1f (Update LICENSE and NOTICE)
+# component: tempest/alpha2/cf-release; repo: cloudfoundry/cf-release; commit: a71b6a3 (Bump src/cloud_controller_ng:)
+# component: tempest/alpha2/vcap-yeti; repo: vmw-tmpst/vcap-yeti; commit: 70373a4 (Merge pull request #3 from jgong/fixversion)
+releases:
+- name: appcloud
+  version: latest
+- name: tempest
+  version: latest
+
+
+compilation:
+  workers: 4
+  network: default
+  cloud_properties:
+    ram: 2048
+    disk: 8096
+    cpu: 2
+
+update:
+  canaries: 1
+  canary_watch_time: 3000-90000
+  update_watch_time: 3000-90000
+  max_in_flight: 2
+  max_errors: 1
+
+
+networks:
+
+
+- name: default
+  subnets:
+  - range: 192.168.1.0/24
+    reserved:
+    - 192.168.1.2 - 192.168.1.29
+    static:
+    - 192.168.1.30 - 192.168.1.100
+    gateway: 192.168.1.1
+    dns:
+    - 192.168.1.1
+    cloud_properties:
+      name: VM Network
+
+resource_pools:
+
+- name: infrastructure
+  network: default
+  size: 9
+  stemcell:
+    name: bosh-stemcell
+    version: 0.8.0
+  cloud_properties:
+    ram: 2048
+    disk: 4096
+    cpu: 1
+  env:
+    bosh:
+      password: "$6$66pTgip9$1FgWAj2uKEUUQj1cnJKXm9xdnhd.jJKmERB/o4Mc/8PPOp8ba6FTv206M3RzPOuZdPlifNjLJaGzysz0OfXxV0"
+
+- name: deas
+  network: default
+  size: 1
+  stemcell:
+    name: bosh-stemcell
+    version: 0.8.0
+  cloud_properties:
+    ram: 2048
+    disk: 8192
+    cpu: 1
+  env:
+    bosh:
+      password: "$6$66pTgip9$1FgWAj2uKEUUQj1cnJKXm9xdnhd.jJKmERB/o4Mc/8PPOp8ba6FTv206M3RzPOuZdPlifNjLJaGzysz0OfXxV0"
+
+jobs:
+- name: nfs_syslog_nats
+  release: appcloud
+  template:
+  - debian_nfs_server
+  - syslog_aggregator
+  - nats
+  instances: 1
+  resource_pool: infrastructure
+  persistent_disk: 8192
+  networks:
+  - name: default
+    static_ips:
+    - 192.168.1.30
+
+- name: ccdb_hm_login
+  release: appcloud
+  template:
+  - postgres
+  - health_manager_next
+  - login
+  instances: 1
+  resource_pool: infrastructure
+  persistent_disk: 512
+  networks:
+  - name: default
+    static_ips:
+    - 192.168.1.31
+  properties:
+    db: ccdb_ng
+
+- name: tsdb_collector_dashboard
+  release: appcloud
+  template:
+  - opentsdb
+  - collector
+  - dashboard
+  instances: 1
+  resource_pool: infrastructure
+  persistent_disk: 2048
+  networks:
+  - name: default
+    static_ips:
+    - 192.168.1.32
+
+- name: uaadb_hbase
+  release: appcloud
+  template:
+  - postgres
+  - hbase_master
+  - hbase_slave
+  instances: 1
+  resource_pool: infrastructure
+  persistent_disk: 2048
+  networks:
+  - name: default
+    static_ips:
+    - 192.168.1.33
+  properties:
+    db: uaadb
+    networks:
+      services: default
+
+- name: router
+  release: appcloud
+  template: gorouter
+  instances: 1
+  resource_pool: infrastructure
+  networks:
+  - name: default
+    static_ips: ["192.168.1.40"]
+
+- name: cloud_controller
+  release: appcloud
+  template: cloud_controller_ng
+  resource_pool: infrastructure
+  instances: 1
+  networks:
+  - name: default
+
+- name: dea
+  release: appcloud
+  template: dea_next
+  resource_pool: deas
+  instances: 1
+  networks:
+  - name: default
+
+- name: uaa_service_gateways
+  release: appcloud
+  template:
+  - uaa
+  - mongodb_gateway
+  resource_pool: infrastructure
+  instances: 1
+  networks:
+  - name: default
+  properties:
+    uaa_client_id: "vmc"
+    uaa_endpoint: http://uaa.skynet.hgadgil.net
+    uaa_client_auth_credentials:
+      username: "dashboard"
+      password: "D@$hb0@rd"
+
+- name: mongodb_node_100
+  release: appcloud
+  template: mongodb_node_ng
+  instances: 1
+  resource_pool: infrastructure
+  persistent_disk: 7053
+  properties:
+    plan: "100"
+    mongodb_node:
+      max_tmp: 256
+  networks:
+  - name: default
+    static_ips:
+    - 192.168.1.36
+
+
+- name: saml_login_server
+  release: tempest
+  template: saml_login_server
+  instances: 1
+  resource_pool: infrastructure
+  persistent_disk: 4096
+  networks:
+  - name: default
+    static_ips:
+    - 192.168.1.37
+  properties:
+    saml_login_server:
+      entityid: "samllogin.skynet.hgadgil.net"
+      idp_entity_alias: sso-sp
+      keystore_name: samlKeystore.jks
+      keystore_key: selfsigned
+      keystore_password: password
+      idp_metadata_file: idp_metadata.xml
+      nameid_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
+
+
+properties:
+
+  domain: skynet.hgadgil.net
+
+  networks:
+    apps: default
+    management: default
+
+  nats:
+    user: nats
+    password: "z2b3ij3122"
+    address: 192.168.1.30
+    port: 4222
+
+  ccdb: &ccdb
+    address: 192.168.1.31
+    port: 5524
+    pool_size: 10
+    roles:
+    - tag: admin
+      name: ccadmin
+      password: "tauBauWauZZb2"
+    databases:
+    - tag: cc
+      name: appcloud
+      citext: true
+  ccdb_ng: *ccdb
+
+  uaadb:
+    address: 192.168.1.33
+    port: 2544
+    db_scheme: postgresql
+    roles:
+    - tag: admin
+      name: root
+      password: "33139c8e3f34bc201351ba7a"
+    databases:
+    - tag: uaa
+      name: uaa
+
+  cc: &cc
+    srv_api_uri: http://api.skynet.hgadgil.net
+    external_host: api
+    logging_level: debug
+    uaa_resource_id: cloud_controller
+    staging_upload_user: dummy
+    staging_upload_password: "dummy"
+    bulk_api_password: zbTuuLaap44jadlas2l312lk
+    bootstrap_admin_email: dashboard
+  ccng: *cc
+
+  router:
+    status:
+      port: 8080
+      user: sBNUxXlS0pc71wVef
+      password: "7nTmaIf9vPV4mJyBe"
+
+  dea_next:
+    memory_mb: 4096
+    memory_overcommit_factor: 2
+    disk_mb: 8192
+    disk_overcommit_factor: 2
+    num_instances: 100
+
+  nfs_server:
+    address: 192.168.1.30
+    network: 192.168.1.0/24
+
+  hbase_master:
+    address: 192.168.1.33
+    hbase_master:
+      port: 60000
+      webui_port: 60010
+      heap_size: 1024
+    hbase_zookeeper:
+      heap_size: 1024
+    hadoop_namenode:
+      port: 9000
+
+  opentsdb:
+    address: 192.168.1.32
+    port: 4242
+
+  hbase_slave:
+    hbase_regionserver:
+      port: 60020
+      heap_size: 1024
+    addresses:
+    - 192.168.1.33
+
+  # workaround for dashboard bug https://www.pivotaltracker.com/projects/166935/stories/47255731
+  dashboard:
+    uaa:
+      client_id: dashboard
+      client_secret: dashboard_client_secret_xyzzy
+
+  service_plans:
+    mysql:
+      "100":
+        description: "Shared server, shared VM, 1MB memory, 10MB storage, 10 connections"
+        free: true
+        job_management:
+          high_water: 8
+          low_water: 2
+        configuration:
+          capacity: 10
+          max_db_size: 10
+          key_buffer: 512
+          innodb_buffer_pool_size: 512
+          max_allowed_packet: 16
+          thread_cache_size: 128
+          query_cache_size: 128
+          max_long_query: 3
+          max_long_tx: 30
+          max_clients: 10
+          max_connections: 40
+          table_open_cache: 80
+          innodb_tables_per_database: 50
+          connection_pool_size:
+            min: 5
+            max: 10
+          warden:
+            enable: false
+    postgresql:
+      "100":
+        description: "Shared server, shared VM, 1MB memory, 10MB storage, 10 connections"
+        free: true
+        job_management:
+          high_water: 8
+          low_water: 2
+        configuration:
+          capacity:  10
+          max_db_size: 10
+          max_long_query: 3
+          max_long_tx: 10
+          max_clients: 10
+          max_connections: 40
+          shared_buffers: 312
+          effective_cache_size: 1115
+          shmmax: 371195904
+          checkpoint_segments: 3
+          checkpoint_segments_max: 3
+          maintenance_work_mem: 30
+          enable_xlog_enforcer: true
+          xlog_enforce_tolerance: 5
+          warden:
+            enable: false
+    mongodb:
+      "100":
+        description: "Dedicated server, shared VM, 250MB storage, 10 connections"
+        free: true
+        job_management:
+          high_water: 8
+          low_water: 2
+        configuration:
+          capacity: 10
+          max_clients: 10
+          quota_files: 4
+          quota_data_size: 240
+          enable_journaling: true
+    redis:
+      "100":
+        description: "Dedicated server, shared VM, 20MB memory, 50 connections"
+        free: true
+        job_management:
+          high_water: 8
+          low_water: 2
+        configuration:
+          capacity: 10
+          max_memory: 20
+          memory_overhead: 5
+          max_clients: 50
+          persistent: true
+    rabbit:
+      "100":
+        description: "Dedicated server, shared VM, 1MB messages/day, 10 connections"
+        free: true
+        job_management:
+          high_water: 8
+          low_water: 2
+        configuration:
+          capacity: 10
+          max_disk: 10
+          max_clients: 10
+          vm_memory_high_watermark: 0.03080
+          free_disk_low_water: 0.01832
+          bandwidth_quotas:
+            per_day: 1
+            per_second: 0.01
+          filesystem_quota: true
+
+  mysql_gateway:
+    cc_api_version: v2
+    token: "d8d7b640fea0666c28eaa93eccdc275e649b6d27"
+    default_plan: "100"
+    supported_versions: ["5.5"]
+    version_aliases:
+      current: "5.5"
+  mysql_node:
+    supported_versions: ["5.5"]
+    default_version: "5.5"
+    password: "zb213djkas"
+
+  redis_gateway:
+    cc_api_version: v2
+    token: "401e721c8cba8c51d8bd4ca1b4e6597e7a527b40"
+    default_plan: "100"
+    supported_versions: ["2.6"]
+    version_aliases:
+      current: "2.6"
+  redis_node:
+    command_rename_prefix: foobar
+    supported_versions: ["2.6"]
+    default_version: "2.6"
+
+  mongodb_gateway:
+    cc_api_version: v2
+    token: "2a8fb923bc4c22750856914eea810607a221fead"
+    default_plan: "100"
+    supported_versions: ["2.2"]
+    version_aliases:
+      current: "2.2"
+  mongodb_node:
+    supported_versions: ["2.2"]
+    default_version: "2.2"
+
+  rabbit_gateway:
+    cc_api_version: v2
+    token: "A00430A8BAED490B1240338DA34B10D"
+    default_plan: "100"
+    supported_versions: ["3.0"]
+    version_aliases:
+      current: "3.0"
+  rabbit_node:
+    supported_versions: ["3.0"]
+    default_version: "3.0"
+
+  postgresql_gateway:
+    cc_api_version: v2
+    token: "cqZeAh4BXFBXwLrrWJCpQTfeDnaCn7m"
+    default_plan: "100"
+    supported_versions: ["9.2"]
+    version_aliases:
+      current: "9.2"
+  postgresql_node:
+    password: "13ec900a8cb24f09413cf1c1b3eb6eca"
+    supported_versions: ["9.2"]
+    default_version: "9.2"
+
+  # workaround for CCNG bug https://www.pivotaltracker.com/story/show/41486951
+  serialization_data_server:
+    upload_token: "dummy"
+    upload_timeout: 9999
+    port: dummy
+  service_lifecycle:
+    serialization_data_server: []
+
+  syslog_aggregator:
+    address: 192.168.1.30
+    port: 54321
+
+  login:
+    url: http://samllogin.skynet.hgadgil.net
+
+  uaa:
+    no_ssl: true
+    catalina_opts: -Xmx768m -XX:MaxPermSize=256m
+    url: http://uaa.skynet.hgadgil.net
+    client_secret: "somesecret"
+    token_secret: "tokensecret"
+    cc:
+      token_secret: "WGvbxaiC371JM"
+      client_secret: "fOZF5DMNDZIfCb9A"
+    admin:
+      client_secret: "MeM5fER8evgEisjj"
+    client:
+      override: true
+    clients:
+      login:
+        id: login
+        autoapprove: true
+        scope: openid
+        authorities: oauth.login
+        secret: "SCTFHXNJTINSOQWXFZWN"
+        authorized-grant-types: authorization_code,client_credentials,refresh_token 
+      dashboard:
+        autoapprove: true
+        secret: dashboard_client_secret_xyzzy
+        scope: openid,dashboard.user
+        authorities: uaa.admin,uaa.resource,tokens.read,scim.read,scim.write
+        authorized-grant-types: client_credentials,authorization_code,refresh_token
+      vmc:
+        override: true
+        autoapprove: true
+        authorized-grant-types: implicit,password,refresh_token
+        authorities: uaa.none
+        scope: cloud_controller.read,cloud_controller.write,openid,password.write,cloud_controller.admin,scim.read,scim.write
+      cf:
+        override: true
+        autoapprove: true
+        authorized-grant-types: implicit,password,refresh_token
+        authorities: uaa.none
+        scope: cloud_controller.read,cloud_controller.write,openid,password.write,cloud_controller.admin,scim.read,scim.write
+    scim:
+      users:
+      - admin@vmware.com|the_admin_pw|scim.write,scim.read,openid,cloud_controller.admin
+      - dashboard|D@$hb0@rd|scim.write,scim.read,openid,cloud_controller.admin,dashboard.user
