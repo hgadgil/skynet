@@ -9,7 +9,7 @@
 # $ cf create-service-auth-token --provider core --token cqZeAh4BXFBXwLrrWJCpQTfeDnaCn7m --label postgresql
 
 name: skynet
-director_uuid: c5b4472a-1db0-41d1-9579-9b741ea8e10d 
+director_uuid: 35a3f677-10c2-41f4-b86a-3de11cdf3df6
 
 # Create release from the following commits:
 # releases repo: vmw-tmpst/releases; commit: 9162f9b (yeti submodule)
@@ -18,11 +18,8 @@ director_uuid: c5b4472a-1db0-41d1-9579-9b741ea8e10d
 # component: tempest/alpha2/cf-release; repo: cloudfoundry/cf-release; commit: a71b6a3 (Bump src/cloud_controller_ng:)
 # component: tempest/alpha2/vcap-yeti; repo: vmw-tmpst/vcap-yeti; commit: 70373a4 (Merge pull request #3 from jgong/fixversion)
 releases:
-- name: appcloud
+- name: cloudfoundry
   version: latest
-- name: tempest
-  version: latest
-
 
 compilation:
   workers: 4
@@ -39,28 +36,26 @@ update:
   max_in_flight: 2
   max_errors: 1
 
-
 networks:
-
 
 - name: default
   subnets:
-  - range: 192.168.1.0/24
+  - range: 10.0.0.0/24
     reserved:
-    - 192.168.1.2 - 192.168.1.29
+    - 10.0.0.2 - 10.0.0.129
     static:
-    - 192.168.1.30 - 192.168.1.100
-    gateway: 192.168.1.1
+    - 10.0.0.130 - 10.0.0.150
+    gateway: 10.0.0.1
     dns:
-    - 192.168.1.1
+    - 10.0.0.1
     cloud_properties:
-      name: VM Network
+      name: tempest-org-vdc-nw
 
 resource_pools:
 
 - name: infrastructure
   network: default
-  size: 9
+  size: 8
   stemcell:
     name: bosh-stemcell
     version: 0.8.0
@@ -88,7 +83,7 @@ resource_pools:
 
 jobs:
 - name: nfs_syslog_nats
-  release: appcloud
+  release: cloudfoundry
   template:
   - debian_nfs_server
   - syslog_aggregator
@@ -99,10 +94,10 @@ jobs:
   networks:
   - name: default
     static_ips:
-    - 192.168.1.30
+    - 10.0.0.130
 
 - name: ccdb_hm_login
-  release: appcloud
+  release: cloudfoundry
   template:
   - postgres
   - health_manager_next
@@ -113,12 +108,12 @@ jobs:
   networks:
   - name: default
     static_ips:
-    - 192.168.1.31
+    - 10.0.0.131
   properties:
     db: ccdb_ng
 
 - name: tsdb_collector_dashboard
-  release: appcloud
+  release: cloudfoundry
   template:
   - opentsdb
   - collector
@@ -129,10 +124,10 @@ jobs:
   networks:
   - name: default
     static_ips:
-    - 192.168.1.32
+    - 10.0.0.132
 
 - name: uaadb_hbase
-  release: appcloud
+  release: cloudfoundry
   template:
   - postgres
   - hbase_master
@@ -143,23 +138,23 @@ jobs:
   networks:
   - name: default
     static_ips:
-    - 192.168.1.33
+    - 10.0.0.133
   properties:
     db: uaadb
     networks:
       services: default
 
 - name: router
-  release: appcloud
+  release: cloudfoundry
   template: gorouter
   instances: 1
   resource_pool: infrastructure
   networks:
   - name: default
-    static_ips: ["192.168.1.40"]
+    static_ips: ["10.0.0.140"]
 
 - name: cloud_controller
-  release: appcloud
+  release: cloudfoundry
   template: cloud_controller_ng
   resource_pool: infrastructure
   instances: 1
@@ -167,7 +162,7 @@ jobs:
   - name: default
 
 - name: dea
-  release: appcloud
+  release: cloudfoundry
   template: dea_next
   resource_pool: deas
   instances: 1
@@ -175,7 +170,7 @@ jobs:
   - name: default
 
 - name: uaa_service_gateways
-  release: appcloud
+  release: cloudfoundry
   template:
   - uaa
   - mongodb_gateway
@@ -191,7 +186,7 @@ jobs:
       password: "D@$hb0@rd"
 
 - name: mongodb_node_100
-  release: appcloud
+  release: cloudfoundry
   template: mongodb_node_ng
   instances: 1
   resource_pool: infrastructure
@@ -203,34 +198,14 @@ jobs:
   networks:
   - name: default
     static_ips:
-    - 192.168.1.36
-
-
-- name: saml_login_server
-  release: tempest
-  template: saml_login_server
-  instances: 1
-  resource_pool: infrastructure
-  persistent_disk: 4096
-  networks:
-  - name: default
-    static_ips:
-    - 192.168.1.37
-  properties:
-    saml_login_server:
-      entityid: "samllogin.skynet.hgadgil.net"
-      idp_entity_alias: sso-sp
-      keystore_name: samlKeystore.jks
-      keystore_key: selfsigned
-      keystore_password: password
-      idp_metadata_file: idp_metadata.xml
-      nameid_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
-
+    - 10.0.0.136
 
 properties:
 
   domain: skynet.hgadgil.net
-
+  app_domains: [ "skynet.hgadgil.net" ]
+  system_domain: skynet.hgadgil.net
+ 
   networks:
     apps: default
     management: default
@@ -238,11 +213,11 @@ properties:
   nats:
     user: nats
     password: "z2b3ij3122"
-    address: 192.168.1.30
+    address: 10.0.0.130
     port: 4222
 
   ccdb: &ccdb
-    address: 192.168.1.31
+    address: 10.0.0.131
     port: 5524
     pool_size: 10
     roles:
@@ -251,12 +226,12 @@ properties:
       password: "tauBauWauZZb2"
     databases:
     - tag: cc
-      name: appcloud
+      name: cloudfoundry
       citext: true
   ccdb_ng: *ccdb
 
   uaadb:
-    address: 192.168.1.33
+    address: 10.0.0.133
     port: 2544
     db_scheme: postgresql
     roles:
@@ -276,7 +251,11 @@ properties:
     staging_upload_password: "dummy"
     bulk_api_password: zbTuuLaap44jadlas2l312lk
     bootstrap_admin_email: dashboard
+    db_encryption_key: zbTuuLaap44jadlas2l312lk
   ccng: *cc
+
+  collector:
+    deployment_name: skynet
 
   router:
     status:
@@ -292,11 +271,11 @@ properties:
     num_instances: 100
 
   nfs_server:
-    address: 192.168.1.30
-    network: 192.168.1.0/24
+    address: 10.0.0.130
+    network: 10.0.0.0/24
 
   hbase_master:
-    address: 192.168.1.33
+    address: 10.0.0.133
     hbase_master:
       port: 60000
       webui_port: 60010
@@ -307,7 +286,7 @@ properties:
       port: 9000
 
   opentsdb:
-    address: 192.168.1.32
+    address: 10.0.0.132
     port: 4242
 
   hbase_slave:
@@ -315,7 +294,7 @@ properties:
       port: 60020
       heap_size: 1024
     addresses:
-    - 192.168.1.33
+    - 10.0.0.133
 
   # workaround for dashboard bug https://www.pivotaltracker.com/projects/166935/stories/47255731
   dashboard:
@@ -485,11 +464,8 @@ properties:
     serialization_data_server: []
 
   syslog_aggregator:
-    address: 192.168.1.30
+    address: 10.0.0.130
     port: 54321
-
-  login:
-    url: http://samllogin.skynet.hgadgil.net
 
   uaa:
     no_ssl: true
@@ -534,3 +510,16 @@ properties:
       users:
       - admin@vmware.com|the_admin_pw|scim.write,scim.read,openid,cloud_controller.admin
       - dashboard|D@$hb0@rd|scim.write,scim.read,openid,cloud_controller.admin,dashboard.user
+
+  vcd:
+    url: https://10.0.0.6
+    user: admin
+    password: password
+    entities:
+      organization: tempest
+      virtual_datacenter: tempest-org-vdc
+      vapp_catalog: cf
+      media_catalog: cf
+      media_storage_profile: *
+      vm_metadata_key: cf-agent-env
+

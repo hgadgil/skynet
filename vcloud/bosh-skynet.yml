@@ -1,6 +1,6 @@
 ---
 name: bosh-skynet
-director_uuid: ec240bcf-385c-48a7-acf6-1c40c363c11b
+director_uuid: 8e592648-9c4a-4d9d-9b43-c86e5fd843f6
 
 release:                                            
   name: bosh-tempest 
@@ -35,6 +35,10 @@ resource_pools:
     ram: 512
     disk: 2048
     cpu: 1
+  env:
+    bosh:
+      password: "$6$66pTgip9$1FgWAj2uKEUUQj1cnJKXm9xdnhd.jJKmERB/o4Mc/8PPOp8ba6FTv206M3RzPOuZdPlifNjLJaGzysz0OfXxV0"
+
 - name: director
   stemcell:
     name: bosh-stemcell
@@ -45,6 +49,9 @@ resource_pools:
     ram:  2048
     disk: 8192
     cpu: 2
+  env:
+    bosh:
+      password: "$6$66pTgip9$1FgWAj2uKEUUQj1cnJKXm9xdnhd.jJKmERB/o4Mc/8PPOp8ba6FTv206M3RzPOuZdPlifNjLJaGzysz0OfXxV0"
 
 compilation:
   workers: 2
