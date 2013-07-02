@@ -31,7 +31,7 @@ cloud:
           virtual_datacenter: tempest-org-vdc
           vapp_catalog: cloudfoundry
           media_catalog: cloudfoundry 
-          media_storage_profile: *
+          media_storage_profile: "*"
           vm_metadata_key: cf-agent-env
           description: MicroBosh on vCloudDirector 
 
