@@ -520,6 +520,6 @@ properties:
       virtual_datacenter: tempest-org-vdc
       vapp_catalog: cf
       media_catalog: cf
-      media_storage_profile: *
+      media_storage_profile: "*"
       vm_metadata_key: cf-agent-env
 

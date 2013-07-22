@@ -1,11 +1,10 @@
---- 
-instances: 
+---
+instances:
 - :id: 1
   :name: bosh_micro01
-  :uuid: bm-360f772c-ea01-41ba-b946-bf3c0a72e617
-  :stemcell_cid: urn:vcloud:catalogitem:c5eb9fec-485d-4979-bf51-26b9758793a9
-  :stemcell_name: micro-bosh-stemcell-vsphere-0.8.1
-  :vm_cid: urn:vcloud:vapp:4d924e9b-7d11-4811-acc2-747bef57bf79
-  :disk_cid: urn:vcloud:disk:35a78fc4-09a2-4a00-9412-2f5fe1147d4a
+  :uuid: bm-a8441801-739f-45b4-8456-4e347d8e0ae2
+  :stemcell_cid: urn:vcloud:catalogitem:4d8103bc-3437-4df5-8c6b-f088fd9b86f9
+  :stemcell_name: latest-micro-bosh-stemcell-vsphere
+  :vm_cid: urn:vcloud:vapp:a1b94ac0-9fe8-4dba-85ee-932e20321f26
+  :disk_cid: urn:vcloud:disk:f2cbb177-3f35-483f-bb66-da9a50e0dea8
 disks: []
-
