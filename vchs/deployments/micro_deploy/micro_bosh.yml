@@ -1,0 +1,43 @@
+---
+name: bosh_micro_vchs
+
+logging:
+  level: DEBUG
+
+network:
+  ip: 192.168.109.10
+  netmask: 255.255.255.0
+  gateway: 192.168.109.1
+  dns:
+  - 192.168.109.1
+  cloud_properties:
+    name: "VDC-26852-120815-121-DEFAULT-ROUTED"
+
+resources:
+  persistent_disk: 16384
+
+cloud:
+  plugin: vcloud
+  properties:
+    agent:
+      ntp:
+       - pool.ntp.org
+    vcds:
+      - url: https://p3v5-vcd.vchs-int.vmware.com
+        user: hgadgil@vmware.com
+        password: Pa$$w0rd
+        entities:
+          organization: VDC-26852-120815-121
+          virtual_datacenter: VDC-26852-120815-121
+          vapp_catalog: cloudfoundry
+          media_catalog: cloudfoundry 
+          media_storage_profile: "*"
+          vm_metadata_key: cf-agent-env
+          description: MicroBosh on vCloudDirector 
+
+apply_spec:
+  properties: {}
+  agent:
+    blobstore: {}
+    nats: {}
+
