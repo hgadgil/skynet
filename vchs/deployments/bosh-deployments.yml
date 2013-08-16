@@ -1,0 +1,10 @@
+---
+instances:
+- :id: 1
+  :name: bosh_micro_vchs
+  :uuid: bm-17ad6d5c-de8e-4551-9ef5-f6bbe7dc55bb
+  :stemcell_cid: urn:vcloud:catalogitem:2a771ff1-f754-4133-b40b-503f2e579282
+  :stemcell_name: latest-micro-bosh-stemcell
+  :vm_cid: urn:vcloud:vm:568f8f3f-6292-4275-b3db-f2efbb7e896c
+  :disk_cid: urn:vcloud:disk:fc3e2672-181a-4254-8478-78f4872239d7
+disks: []

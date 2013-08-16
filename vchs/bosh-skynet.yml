@@ -1,6 +1,6 @@
 ---
 name: bosh-skynet
-director_uuid: 99aecc3e-0d7c-4385-bf10-4260bb9a0b70
+director_uuid: dc08697a-c6b8-4ad4-b3a6-bd250779db11
 
 release:                                            
   name: bosh-tempest
@@ -10,15 +10,15 @@ networks:
 - name: default # An internal name for the network in your manifest file
   subnets:
   - reserved:
-    - 10.0.0.2 - 10.0.0.100
+    - 192.168.109.2 - 192.168.109.29
     static:
-    - 10.0.0.101 - 10.0.0.130
-    range: 10.0.0.0/24
-    gateway: 10.0.0.1
+    - 192.168.109.30 - 192.168.109.50
+    range: 192.168.109.0/24
+    gateway: 192.168.109.1
     dns:
-    - 10.0.0.1
+    - 192.168.109.1
     cloud_properties:
-      name: "tempest-org-vdc-nw"      
+      name: "VDC-26852-120815-121-default-routed"
 
 #
 # You shouldn't have to change any of the resource pool parameters
@@ -86,7 +86,7 @@ jobs:
   networks:
   - name: default
     static_ips:
-    - 10.0.0.120
+    - 192.168.109.30
 
 - name: postgres
   template: postgres
@@ -96,7 +96,7 @@ jobs:
   networks:
   - name: default
     static_ips:
-    - 10.0.0.121
+    - 192.168.109.31
 
 - name: redis
   template: redis
@@ -105,7 +105,7 @@ jobs:
   networks:
   - name: default
     static_ips:
-    - 10.0.0.122
+    - 192.168.109.32
 
 - name: director
   template: director
@@ -115,17 +115,17 @@ jobs:
   networks:
   - name: default
     static_ips:
-    - 10.0.0.123
+    - 192.168.109.33
 
 - name: blobstore
   template: blobstore
   instances: 1
   resource_pool: small
-  persistent_disk: 8192
+  persistent_disk: 16384
   networks:
   - name: default
     static_ips:
-    - 10.0.0.124
+    - 192.168.109.34
 
 - name: health_monitor
   template: health_monitor
@@ -134,13 +134,13 @@ jobs:
   networks:
   - name: default
     static_ips:
-    - 10.0.0.125
+    - 192.168.109.35
 
 properties:
   env:
 
   blobstore:
-    address: 10.0.0.124
+    address: 192.168.109.34
     port: 25251
     backend_port: 25552
     agent:
@@ -157,24 +157,24 @@ properties:
   nats:
     user: nats              
     password: 38dhj389ddck378gcE
-    address: 10.0.0.120
+    address: 192.168.109.30
     port: 4222
 
   postgres:
     user: bosh             
     password: 29fhcuebJDldhv265kB
-    address: 10.0.0.121
+    address: 192.168.109.31
     port: 5432
     database: bosh
 
   redis:
-    address: 10.0.0.122
+    address: 192.168.109.32
     port: 25255
     password: wicjew93hf2
 
   director:
     name: skynet-bosh
-    address: 10.0.0.123
+    address: 192.168.109.33
     port: 25555
     db:
       user: director
@@ -208,18 +208,16 @@ properties:
       password: 38fhsoeY
       domain: localdomain
     tsdb_enabled: false     # If this option is set to false, comment out its params.
-    #tsdb:
-    #  address: 10.1.4.228
-    #  port: 4242
 
   vcd:
-    url: https://10.0.0.6
-    user: admin
-    password: password
+    url: https://p3v5-vcd.vchs-int.vmware.com
+    user: hgadgil@vmware.com
+    password: Pa$$w0rd
     entities:
-      organization: tempest
-      virtual_datacenter: tempest-org-vdc
-      vapp_catalog: cloudfoundry
-      media_catalog: cloudfoundry
+      organization: VDC-26852-120815-121
+      virtual_datacenter: VDC-26852-120815-121
+      vapp_catalog: bosh 
+      media_catalog: bosh
       media_storage_profile: "*"
       vm_metadata_key: cf-agent-env
+      description: Bosh on vCloudDirector
